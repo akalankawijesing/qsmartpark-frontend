@@ -1,10 +1,4 @@
-// app/users/page.tsx
-interface User {
-  userId: number;
-  name: string;
-  email: string;
-  phone: string;
-}
+import { User } from "@/lib/types";
 
 async function getUsers(): Promise<User[]> {
   const res = await fetch("http://localhost:8080/api/users", {
@@ -30,7 +24,7 @@ export default async function UsersPage() {
       <ul className="space-y-2">
         {users.map((u) => (
           <li key={u.userId} className="border p-2 rounded">
-            <div><strong>Name:</strong> {u.name}</div>
+            <div><strong>Name:</strong> {u.firstName} {u.lastName}</div>
             <div><strong>Email:</strong> {u.email}</div>
             <div><strong>Phone:</strong> {u.phone}</div>
           </li>
