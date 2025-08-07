@@ -22,13 +22,22 @@ export default function UserForm({ method, user }: Props) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsActive(true);
-    const payload = { firstName, lastName, email, phone, role, isActive, passwordHash: "placeholder" };
+    const payload = {
+      firstName,
+      lastName,
+      email,
+      phone,
+      role,
+      isActive,
+      passwordHash: "placeholder",
+    };
     const url =
       method === "create"
-        ? "http://localhost:8080/api/users"
-        : `http://localhost:8080/api/users/${user?.userId}`;
+        ? "http://localhost:8080/api/system/users"
+        : `http://localhost:8080/api/system/users/${user?.userId}`;
     const res = await fetch(url, {
       method: method === "create" ? "POST" : "PUT",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -37,7 +46,7 @@ export default function UserForm({ method, user }: Props) {
       setError("Failed to save user");
       return;
     }
-    router.push("/user");
+    //router.push("/user");
   };
 
   return (
@@ -80,7 +89,7 @@ export default function UserForm({ method, user }: Props) {
           className="w-full border p-2 rounded"
         />
       </div>
-            <div>
+      <div>
         <label className="block">Role</label>
         <input
           value={role}

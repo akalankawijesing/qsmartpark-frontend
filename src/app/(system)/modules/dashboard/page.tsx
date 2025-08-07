@@ -1,9 +1,11 @@
 'use client';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function SystemPage() {
   const { user, logout } = useAuth();
+   const router = useRouter();
 
   return (
     <ProtectedRoute requiredRoles={['ADMIN', 'STAFF']}>
@@ -39,15 +41,15 @@ export default function SystemPage() {
               
               {/* System management content here */}
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded shadow">
+                <div className="bg-white p-4 rounded shadow" onClick={() => router.push("/modules/users")}>
                   <h3 className="font-medium">User Management</h3>
                   <p className="text-sm text-gray-600 mt-2">Manage system users</p>
                 </div>
-                <div className="bg-white p-4 rounded shadow">
+                <div className="bg-white p-4 rounded shadow" onClick={() => router.push("/modules/settings")}>
                   <h3 className="font-medium">Settings</h3>
                   <p className="text-sm text-gray-600 mt-2">System configuration</p>
                 </div>
-                <div className="bg-white p-4 rounded shadow">
+                <div className="bg-white p-4 rounded shadow" onClick={() => router.push("/modules/reports")}>
                   <h3 className="font-medium">Reports</h3>
                   <p className="text-sm text-gray-600 mt-2">System reports</p>
                 </div>

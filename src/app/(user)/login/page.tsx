@@ -56,7 +56,7 @@ export default function LoginPage() {
       if (success) {
         
         console.log("Login successful, user should be set in context");
-        // Note: Redirect will be handled by useEffect when user state updates
+        // Redirect will be handled by useEffect when user state updates
       } else {
         console.log("Login failed");
         setErrorMessage("Invalid email or password.");
