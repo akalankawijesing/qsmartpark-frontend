@@ -34,8 +34,8 @@ export default function LoginPage() {
       console.log('User roles:', user.roles);
       // Redirect based on role
       if (user.roles.includes('ADMIN') || user.roles.includes('STAFF')) {
-        console.log('Redirecting to /system');
-        router.push('/system');
+        console.log('Redirecting to /modules/dashboard');
+        router.push('/modules/dashboard');
       } else if (user.roles.includes('USER')) {
         console.log('Redirecting to /dashboard');
         router.push('/dashboard');
