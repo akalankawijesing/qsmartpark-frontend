@@ -12,9 +12,12 @@ export default async function UsersPage() {
   let users: User[] = [];
   try {
     users = await getUsers();
-  } catch (e: any) {
+  } catch (e: unknown) {
+  if (e instanceof Error) {
     return <div>Error: {e.message}</div>;
   }
+  return <div>Unexpected error</div>;
+}
 
   if (!users.length) return <div>No users found.</div>;
 
