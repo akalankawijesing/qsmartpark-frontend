@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function UserForm({ method, user }: Props) {
-  const router = useRouter();
+  //const router = useRouter();
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [role, setRole] = useState(user?.role || "");
