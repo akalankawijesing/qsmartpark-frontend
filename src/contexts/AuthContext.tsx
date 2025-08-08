@@ -5,6 +5,8 @@ interface User {
   username: string;
   email: string;
   roles: string[];
+  firstName: string;
+  lastName: string;
 }
 
 interface AuthContextType {
@@ -43,11 +45,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok) {
         const userData = await response.json();
+        console.log('Authenticated user data:', userData);
         // Transform the response to match our interface
         setUser({
-          username: userData.email, // Using email as username
+          username: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
           email: userData.email,
-          roles: Array.from(userData.roles) // Convert Set to Array
+          roles: Array.from(userData.roles)
         });
       } else {
         setUser(null);

@@ -2,7 +2,6 @@
 "use client";
 import { useState, FormEvent } from "react";
 import { User } from "@/lib/types";
-import { useRouter } from "next/navigation";
 
 type Props = {
   method: "create" | "edit";
