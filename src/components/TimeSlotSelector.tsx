@@ -9,7 +9,7 @@ interface TimeSlotSelectorProps {
   bookedSlots: string[];
 }
 
-function generateTimeSlots(start = 9, end = 17, interval = 60): string[] {
+function generateTimeSlots(start = 9, end = 17): string[] {
   const slots: string[] = [];
 
   for (let hour = start; hour <= end; hour++) {

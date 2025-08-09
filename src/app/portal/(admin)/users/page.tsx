@@ -1,3 +1,4 @@
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { User } from "@/lib/types";
 
 async function getUsers(): Promise<User[]> {
@@ -15,7 +16,6 @@ async function getUsers(): Promise<User[]> {
   return data;
 }
 
-
 export default async function UsersPage() {
   let users: User[] = [];
   try {
@@ -30,23 +30,25 @@ export default async function UsersPage() {
   if (!users.length) return <div>No users found.</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Users</h1>
-      <ul className="space-y-2">
-        {users.map((u) => (
-          <li key={u.userId} className="border p-2 rounded">
-            <div>
-              <strong>Name:</strong> {u.firstName} {u.lastName}
-            </div>
-            <div>
-              <strong>Email:</strong> {u.email}
-            </div>
-            <div>
-              <strong>Phone:</strong> {u.phone}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ProtectedRoute requiredRoles={["ADMIN", "STAFF"]}>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-4">Users</h1>
+        <ul className="space-y-2">
+          {users.map((u) => (
+            <li key={u.userId} className="border p-2 rounded">
+              <div>
+                <strong>Name:</strong> {u.firstName} {u.lastName}
+              </div>
+              <div>
+                <strong>Email:</strong> {u.email}
+              </div>
+              <div>
+                <strong>Phone:</strong> {u.phone}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </ProtectedRoute>
   );
 }
