@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -14,14 +15,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    <div className="min-h-screen bg-slate-50">
+      <Header />
+      <Toaster />
+      <main className="pt-16 lg:pt-20">{children}</main>
 
-        <div className="min-h-screen bg-slate-50">
-          <Header />
-          <main className="pt-16 lg:pt-20">
-            {children}
-          </main>
-          <Footer />
-        </div>
-
+      <Footer />
+    </div>
   );
 }
