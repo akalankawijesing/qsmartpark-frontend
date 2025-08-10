@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface BookingData {
   userId: string;
   slotId: string;
+  date: string;
   startTime: string;
   endTime: string;
   status: string;
@@ -53,40 +54,59 @@ export default function BookNowPage() {
   const dummyBookedSlots = ["10:00 AM", "01:00 PM"];
 
   const convertTimeSlotToDateTime = (
-    date: Date,
-    timeSlot: string,
-    durationMinutes: number
-  ): { startTime: string; endTime: string } => {
-    // Parse the time slot (e.g., "10:00 AM", "02:30 PM")
-    const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (!timeParts) {
-      throw new Error(`Invalid time format: ${timeSlot}`);
-    }
+  date: Date,
+  timeSlot: string,
+  durationMinutes: number
+): { startTime: string; endTime: string } => {
+  // Parse the time slot (e.g., "10:00 AM", "02:30 PM")
+  const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!timeParts) {
+    throw new Error(`Invalid time format: ${timeSlot}`);
+  }
 
-    let hours = parseInt(timeParts[1]);
-    const minutes = parseInt(timeParts[2]);
-    const period = timeParts[3].toUpperCase();
+  let hours = parseInt(timeParts[1]);
+  const minutes = parseInt(timeParts[2]);
+  const period = timeParts[3].toUpperCase();
 
-    // Convert to 24-hour format
-    if (period === "PM" && hours !== 12) {
-      hours += 12;
-    } else if (period === "AM" && hours === 12) {
-      hours = 0;
-    }
+  // Convert to 24-hour format
+  if (period === "PM" && hours !== 12) {
+    hours += 12;
+  } else if (period === "AM" && hours === 12) {
+    hours = 0;
+  }
 
-    // Create start time
-    const startDateTime = new Date(date);
-    startDateTime.setHours(hours, minutes, 0, 0);
+  // ✅ FIX: Create start time using the exact date components to avoid timezone issues
+  const startDateTime = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    hours,
+    minutes,
+    0,
+    0
+  );
 
-    // Create end time based on duration
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setMinutes(startDateTime.getMinutes() + durationMinutes);
+  // Create end time based on duration
+  const endDateTime = new Date(startDateTime);
+  endDateTime.setMinutes(startDateTime.getMinutes() + durationMinutes);
 
-    return {
-      startTime: startDateTime.toISOString(),
-      endTime: endDateTime.toISOString(),
-    };
+  // ✅ FIX: Format to local ISO string to maintain the correct date/time
+  const formatToLocalISO = (d: Date): string => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hour = String(d.getHours()).padStart(2, '0');
+    const minute = String(d.getMinutes()).padStart(2, '0');
+    const second = String(d.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
   };
+
+  return {
+    startTime: formatToLocalISO(startDateTime),
+    endTime: formatToLocalISO(endDateTime),
+  };
+};
 
   const formatEndTime = (timeSlot: string, durationMinutes: number): string => {
     const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
@@ -163,8 +183,9 @@ export default function BookNowPage() {
       const slotId = slotAvailabilityResult[0].id;
 
       const bookingData: BookingData = {
-        userId: "a322a34a-e8f3-422e-96e4-aa56190c6b48",
+        userId: "ccdbe5d2-94c1-434b-aa32-7ac5c8adb21d",
         slotId,
+        date: selectedDate.toISOString().split("T")[0],
         startTime,
         endTime,
         status: "CONFIRMED",
