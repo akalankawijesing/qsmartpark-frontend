@@ -23,15 +23,66 @@ import {
   TimerIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { PaymentConfirmationDialog } from "@/components/PaymentConfirmationDialog";
 
 interface BookingData {
   userId: string;
   slotId: string;
   date: string;
+  vehicleNo: string;
+  vehicleType: string;
   startTime: string;
   endTime: string;
   status: string;
   qrCode: string;
+}
+
+interface BookingConfirmationData {
+  id: string;
+  userId: string;
+  slotId: string;
+  date: string;
+  vehicleNo: string;
+  vehicleType: string;
+  cost: number;
+  orderId: string;
+  currency: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  qrCode: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+interface PaymentRequest {
+  orderId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address?: string;
+  city?: string;
+}
+
+interface PaymentConfig {
+  sandbox: boolean;
+  merchantId: string;
+  returnUrl: string;
+  cancelUrl: string;
+  notifyUrl: string;
+  orderId: string;
+  items: string;
+  amount: number;
+  currency: string;
+  hash: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  country: string;
 }
 
 // Duration options in minutes
@@ -48,65 +99,67 @@ export default function BookNowPage() {
   const [duration, setDuration] = useState<number>(90); // Default 1.5 hours
   const [isLoading, setIsLoading] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [bookingConfirmationData, setBookingConfirmationData] =
+    useState<BookingConfirmationData | null>(null);
 
   const { user, logout } = useAuth();
 
   const dummyBookedSlots = ["10:00 AM", "01:00 PM"];
 
   const convertTimeSlotToDateTime = (
-  date: Date,
-  timeSlot: string,
-  durationMinutes: number
-): { startTime: string; endTime: string } => {
-  // Parse the time slot (e.g., "10:00 AM", "02:30 PM")
-  const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!timeParts) {
-    throw new Error(`Invalid time format: ${timeSlot}`);
-  }
+    date: Date,
+    timeSlot: string,
+    durationMinutes: number
+  ): { startTime: string; endTime: string } => {
+    // Parse the time slot (e.g., "10:00 AM", "02:30 PM")
+    const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!timeParts) {
+      throw new Error(`Invalid time format: ${timeSlot}`);
+    }
 
-  let hours = parseInt(timeParts[1]);
-  const minutes = parseInt(timeParts[2]);
-  const period = timeParts[3].toUpperCase();
+    let hours = parseInt(timeParts[1]);
+    const minutes = parseInt(timeParts[2]);
+    const period = timeParts[3].toUpperCase();
 
-  // Convert to 24-hour format
-  if (period === "PM" && hours !== 12) {
-    hours += 12;
-  } else if (period === "AM" && hours === 12) {
-    hours = 0;
-  }
+    // Convert to 24-hour format
+    if (period === "PM" && hours !== 12) {
+      hours += 12;
+    } else if (period === "AM" && hours === 12) {
+      hours = 0;
+    }
 
-  // ✅ FIX: Create start time using the exact date components to avoid timezone issues
-  const startDateTime = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    hours,
-    minutes,
-    0,
-    0
-  );
+    // ✅ FIX: Create start time using the exact date components to avoid timezone issues
+    const startDateTime = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    );
 
-  // Create end time based on duration
-  const endDateTime = new Date(startDateTime);
-  endDateTime.setMinutes(startDateTime.getMinutes() + durationMinutes);
+    // Create end time based on duration
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setMinutes(startDateTime.getMinutes() + durationMinutes);
 
-  // ✅ FIX: Format to local ISO string to maintain the correct date/time
-  const formatToLocalISO = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hour = String(d.getHours()).padStart(2, '0');
-    const minute = String(d.getMinutes()).padStart(2, '0');
-    const second = String(d.getSeconds()).padStart(2, '0');
-    
-    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    // ✅ FIX: Format to local ISO string to maintain the correct date/time
+    const formatToLocalISO = (d: Date): string => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hour = String(d.getHours()).padStart(2, "0");
+      const minute = String(d.getMinutes()).padStart(2, "0");
+      const second = String(d.getSeconds()).padStart(2, "0");
+
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+    };
+
+    return {
+      startTime: formatToLocalISO(startDateTime),
+      endTime: formatToLocalISO(endDateTime),
+    };
   };
-
-  return {
-    startTime: formatToLocalISO(startDateTime),
-    endTime: formatToLocalISO(endDateTime),
-  };
-};
 
   const formatEndTime = (timeSlot: string, durationMinutes: number): string => {
     const timeParts = timeSlot.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
@@ -146,12 +199,28 @@ export default function BookNowPage() {
     setIsConfirming(true);
   };
 
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+
+  // Handle payment dialog close
+  const handlePaymentDialogClose = (open: boolean) => {
+    setShowPaymentDialog(open);
+    if (!open) {
+      toast.info("You can retry payment by clicking 'Confirm Booking' again");
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedSlot) return;
 
     setIsLoading(true);
 
     try {
+      // If we already have a booking in PAYMENT_PENDING state, reuse it
+      if (bookingConfirmationData?.status === "PAYMENT_PENDING") {
+        setShowPaymentDialog(true);
+        return;
+      }
+
       const { startTime, endTime } = convertTimeSlotToDateTime(
         selectedDate,
         selectedSlot,
@@ -183,18 +252,16 @@ export default function BookNowPage() {
       const slotId = slotAvailabilityResult[0].id;
 
       const bookingData: BookingData = {
-        userId: "ccdbe5d2-94c1-434b-aa32-7ac5c8adb21d",
+        userId: "d8c888a3-6071-4b02-8955-23fd1ad96c66",
         slotId,
         date: selectedDate.toISOString().split("T")[0],
+        vehicleNo: "ABC1234",
+        vehicleType: "CAR",
         startTime,
         endTime,
-        status: "CONFIRMED",
+        status: "PAYMENT_PENDING",
         qrCode: "CUSTOM_QR_CODE_123",
       };
-
-      console.log("Booking data:", bookingData);
-      console.log("Start:", new Date(startTime).toLocaleString());
-      console.log("End:", new Date(endTime).toLocaleString());
 
       const response = await fetch("http://localhost:8080/api/reservations", {
         method: "POST",
@@ -210,18 +277,8 @@ export default function BookNowPage() {
       }
 
       const result = await response.json();
-
-      toast.success(
-        <div className="flex items-center gap-2">
-          <CheckCircleIcon className="h-5 w-5 text-green-600" />
-          <span>Booking confirmed successfully!</span>
-        </div>
-      );
-
-      // Reset form
-      setSelectedDate(undefined);
-      setSelectedSlot(null);
-      setIsConfirming(false);
+      setBookingConfirmationData(result);
+      setShowPaymentDialog(true);
     } catch (error) {
       console.error("Booking error:", error);
       toast.error("Failed to create booking. Please try again.");
@@ -230,7 +287,99 @@ export default function BookNowPage() {
     }
   };
 
+  const handlePaymentConfirmation = async () => {
+    if (!bookingConfirmationData) return;
+
+    const paymentRequest: PaymentRequest = {
+      orderId: bookingConfirmationData.orderId,
+      firstName: "John",
+      lastName: "Doe",
+      email: "john.doe@example.com",
+      phone: "1234567890",
+      address: "123 Main St",
+      city: "Anytown",
+    };
+
+    try {
+      const response = await fetch(
+        "http://localhost:8080/api/payment/initiate",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(paymentRequest), // Send directly, not nested
+        }
+      );
+      console.log("Payment initiation request:", paymentRequest);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const paymentResult = await response.json();
+
+      console.log("Payment result:", paymentResult);
+
+  const { paymentConfig } = await response.json();
+
+  // Declare payhere as a global variable (if loaded via script tag)
+  // @ts-ignore
+  const payhere = (window as any).payhere;
+  if (!payhere) {
+    throw new Error("PayHere SDK is not loaded.");
+  }
+
+  // Initialize PayHere payment
+  payhere.startPayment({
+    sandbox: paymentConfig.sandbox,
+    merchant_id: paymentConfig.merchantId,
+    return_url: paymentConfig.returnUrl,
+    cancel_url: paymentConfig.cancelUrl,
+    notify_url: paymentConfig.notifyUrl,
+    order_id: paymentConfig.orderId,
+    items: paymentConfig.items,
+    amount: paymentConfig.amount.toFixed(2),
+    currency: paymentConfig.currency,
+    hash: paymentConfig.hash,
+    first_name: paymentConfig.firstName,
+    last_name: paymentConfig.lastName,
+    email: paymentConfig.email,
+    phone: paymentConfig.phone,
+    address: paymentConfig.address,
+    city: paymentConfig.city,
+    country: paymentConfig.country
+  });
+      /*
+      // Redirect to payment gateway or handle the response as needed
+      if (paymentResult.redirectUrl) {
+        window.location.href = paymentResult.redirectUrl;
+      }
+*/
+      toast.success(
+        <div className="flex items-center gap-2">
+          <CheckCircleIcon className="h-5 w-5 text-green-600" />
+          <span>Payment initiated successfully!</span>
+        </div>
+      );
+
+      // Reset form
+      setSelectedDate(undefined);
+      setSelectedSlot(null);
+      setIsConfirming(false);
+      setShowPaymentDialog(false);
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      toast.error("Failed to initiate payment. Please try again.");
+      throw error; // Re-throw to be handled by the dialog
+    }
+  };
+
   const handleBack = () => {
+    // Only clear booking data if payment was successful or user wants to start over
+    if (bookingConfirmationData?.status === "CONFIRMED") {
+      setBookingConfirmationData(null);
+    }
     setIsConfirming(false);
   };
 
@@ -466,6 +615,23 @@ export default function BookNowPage() {
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Payment Confirmation Dialog */}
+      {bookingConfirmationData && (
+        <PaymentConfirmationDialog
+          open={showPaymentDialog}
+          onOpenChange={handlePaymentDialogClose}
+          bookingDetails={{
+            id: bookingConfirmationData.id,
+            date: bookingConfirmationData.date,
+            startTime: bookingConfirmationData.startTime,
+            endTime: bookingConfirmationData.endTime,
+            cost: bookingConfirmationData.cost,
+            currency: bookingConfirmationData.currency,
+          }}
+          onConfirmPayment={handlePaymentConfirmation}
+        />
       )}
     </div>
   );
