@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { PaymentConfirmationDialog } from "@/components/PaymentConfirmationDialog";
+import Script from "next/script";
 
 interface BookingData {
   userId: string;
@@ -252,7 +253,7 @@ export default function BookNowPage() {
       const slotId = slotAvailabilityResult[0].id;
 
       const bookingData: BookingData = {
-        userId: "d8c888a3-6071-4b02-8955-23fd1ad96c66",
+        userId: "e178be8d-fe37-4231-a55d-0015bb913ecf",
         slotId,
         date: selectedDate.toISOString().split("T")[0],
         vehicleNo: "ABC1234",
@@ -321,14 +322,14 @@ export default function BookNowPage() {
 
       console.log("Payment result:", paymentResult);
 
-  const { paymentConfig } = await response.json();
+  const { paymentConfig } = paymentResult;
+  const orderId = paymentConfig.orderId;
 
-  // Declare payhere as a global variable (if loaded via script tag)
-  // @ts-ignore
-  const payhere = (window as any).payhere;
-  if (!payhere) {
-    throw new Error("PayHere SDK is not loaded.");
-  }
+if (typeof window !== "undefined" && !(window as any).payhere) {
+  throw new Error("PayHere SDK is not loaded.");
+}
+
+const payhere = (window as any).payhere;
 
   // Initialize PayHere payment
   payhere.startPayment({
@@ -350,18 +351,37 @@ export default function BookNowPage() {
     city: paymentConfig.city,
     country: paymentConfig.country
   });
-      /*
-      // Redirect to payment gateway or handle the response as needed
-      if (paymentResult.redirectUrl) {
-        window.location.href = paymentResult.redirectUrl;
-      }
-*/
+
       toast.success(
         <div className="flex items-center gap-2">
           <CheckCircleIcon className="h-5 w-5 text-green-600" />
           <span>Payment initiated successfully!</span>
         </div>
       );
+
+      payhere.onCompleted = async function onPaymentCompleted(orderId:string) {
+  try {
+    console.log("Payment completed for order:", orderId);
+    const res = await fetch(`http://localhost:8080/api/payment/verify/${orderId}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await res.json();
+    console.log("Verification response:", data);
+
+    if (data.isVerified) {
+      alert("✅ Payment confirmed!");
+      // update UI, redirect, etc.
+    } else {
+      alert("⚠ Payment not verified yet. Please contact support.");
+    }
+  } catch (err) {
+    console.error("Verification request failed", err);
+    alert("❌ Could not verify payment. Please try again later.");
+  }
+};
 
       // Reset form
       setSelectedDate(undefined);
@@ -384,6 +404,8 @@ export default function BookNowPage() {
   };
 
   return (
+<>
+
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
@@ -634,5 +656,13 @@ export default function BookNowPage() {
         />
       )}
     </div>
+              <Script
+        src="https://www.payhere.lk/lib/payhere.js"
+        strategy="beforeInteractive" // loads before page scripts
+        onLoad={() => {
+          console.log("PayHere SDK loaded");
+        }}
+      />
+    </>
   );
 }
